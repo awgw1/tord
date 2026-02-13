@@ -1,0 +1,1492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Truth or Dare</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #05061A;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* Starry night sky */
+  #starfield {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .floating-item {
+    position: fixed;
+    pointer-events: none;
+    opacity: 0.18;
+    font-size: 48px;
+    line-height: 1;
+    z-index: 0;
+  }
+
+  @keyframes drift {
+    0%   { transform: translate(0, 0) rotate(0deg) scale(1); }
+    25%  { transform: translate(20px, -25px) rotate(15deg) scale(1.05); }
+    50%  { transform: translate(-15px, 15px) rotate(-10deg) scale(0.95); }
+    75%  { transform: translate(25px, 10px) rotate(20deg) scale(1.03); }
+    100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+  }
+
+  @keyframes driftAlt {
+    0%   { transform: translate(0, 0) rotate(0deg) scale(1); }
+    25%  { transform: translate(-18px, 20px) rotate(-12deg) scale(0.97); }
+    50%  { transform: translate(22px, -18px) rotate(18deg) scale(1.06); }
+    75%  { transform: translate(-10px, -15px) rotate(-8deg) scale(0.98); }
+    100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+  }
+
+  .container {
+    text-align: center;
+    padding: 1.5rem;
+    max-width: 700px;
+    width: 100%;
+    position: relative;
+    z-index: 1;
+  }
+
+  h1 {
+    font-family: 'Fredoka One', cursive;
+    font-size: 3rem;
+    color: #fff;
+    margin-bottom: 0.3rem;
+    text-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    letter-spacing: 2px;
+  }
+
+  .subtitle {
+    color: rgba(255,255,255,0.5);
+    font-size: 0.85rem;
+    margin-bottom: 2rem;
+    font-style: italic;
+  }
+
+  /* Card with characters */
+  .card-wrapper {
+    position: relative;
+    margin-bottom: 2rem;
+  }
+
+  .card {
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 24px;
+    -webkit-border-radius: 24px;
+    padding: 2.5rem 2rem;
+    min-height: 240px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card.truth {
+    border-color: rgba(78, 205, 196, 0.4);
+    box-shadow: 0 8px 40px rgba(78, 205, 196, 0.15);
+  }
+
+  .card.dare {
+    border-color: rgba(255, 107, 107, 0.4);
+    box-shadow: 0 8px 40px rgba(255, 107, 107, 0.15);
+  }
+
+  .card.potluck {
+    border-color: rgba(255, 153, 68, 0.4);
+    box-shadow: 0 8px 40px rgba(255, 153, 68, 0.15);
+  }
+
+  .card-label {
+    font-family: 'Fredoka One', cursive;
+    font-size: 0.9rem;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    padding: 0.3rem 1.2rem;
+    border-radius: 20px;
+    display: inline-block;
+  }
+
+  .card.truth .card-label { color: #4ecdc4; background: rgba(78, 205, 196, 0.12); }
+  .card.dare .card-label { color: #ff6b6b; background: rgba(255, 107, 107, 0.12); }
+  .card.potluck .card-label { color: #ff9944; background: rgba(255, 153, 68, 0.12); }
+
+  .card-text {
+    font-size: 1.3rem;
+    color: #fff;
+    line-height: 1.6;
+    font-weight: 600;
+    max-width: 440px;
+    padding: 0 1rem;
+  }
+
+  .card-badge {
+    position: absolute;
+    top: 14px;
+    right: 18px;
+    font-size: 0.65rem;
+    color: rgba(255,255,255,0.25);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .card.idle .card-text {
+    color: rgba(255,255,255,0.35);
+    font-size: 1.1rem;
+    font-weight: 400;
+  }
+
+  /* Character avatars flanking the card */
+  .character {
+    position: absolute;
+    bottom: -20px;
+    width: 110px;
+    height: 140px;
+    z-index: 2;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .character.left { left: -30px; }
+  .character.right { right: -30px; }
+
+  .card.truth .character.left { transform: translateY(-5px) rotate(-3deg); }
+  .card.truth .character.right { transform: translateY(-8px) rotate(3deg); }
+  .card.dare .character.left { transform: translateY(-10px) rotate(-5deg); }
+  .card.dare .character.right { transform: translateY(-12px) rotate(5deg); }
+
+  /* Character buttons */
+  .buttons {
+    display: flex;
+    gap: 2.5rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    align-items: flex-end;
+  }
+
+  .char-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    padding: 0.5rem;
+    border-radius: 20px;
+  }
+
+  .char-btn:hover {
+    transform: translateY(-8px) scale(1.05);
+  }
+  .char-btn:active {
+    transform: scale(0.92);
+  }
+
+  .char-btn svg {
+    width: 130px;
+    height: auto;
+    filter: drop-shadow(0 4px 12px rgba(0,0,0,0.3));
+    transition: filter 0.3s;
+  }
+
+  .char-btn:hover svg {
+    filter: drop-shadow(0 8px 24px rgba(0,0,0,0.4));
+  }
+
+  .char-btn .btn-label {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.1rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 0.3rem 1.2rem;
+    border-radius: 20px;
+  }
+
+  .char-btn.truth-btn .btn-label {
+    color: #4ecdc4;
+    text-shadow: 0 0 16px rgba(78,205,196,0.4);
+  }
+  .char-btn.dare-btn .btn-label {
+    color: #ff6b6b;
+    text-shadow: 0 0 16px rgba(255,107,107,0.4);
+  }
+  .char-btn.potluck-btn .btn-label {
+    color: #ff9944;
+    text-shadow: 0 0 16px rgba(255,153,68,0.4);
+  }
+
+  @keyframes btnBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+  .char-btn:hover svg {
+    animation: btnBounce 0.5s ease;
+  }
+
+  @keyframes cardFlip {
+    0% { transform: rotateY(0deg) scale(1); opacity: 1; }
+    40% { transform: rotateY(90deg) scale(0.9); opacity: 0.3; }
+    60% { transform: rotateY(90deg) scale(0.9); opacity: 0.3; }
+    100% { transform: rotateY(0deg) scale(1); opacity: 1; }
+  }
+  .card.flipping { animation: cardFlip 0.6s ease-in-out; }
+
+  .confetti-piece {
+    position: fixed;
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    pointer-events: none;
+    z-index: 100;
+    animation: confettiFall 2s ease-out forwards;
+  }
+  @keyframes confettiFall {
+    0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+  }
+
+  .history-toggle {
+    margin-top: 1.5rem;
+    color: rgba(255,255,255,0.3);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: color 0.3s;
+    background: none;
+    border: none;
+    font-family: 'Nunito', sans-serif;
+  }
+  .history-toggle:hover { color: rgba(255,255,255,0.6); }
+
+  .history {
+    margin-top: 1rem;
+    text-align: left;
+    max-height: 200px;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+  }
+  .history::-webkit-scrollbar { width: 4px; }
+  .history::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
+
+  .history-item {
+    padding: 0.6rem 0.8rem;
+    margin-bottom: 0.4rem;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.04);
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.5);
+    border-left: 3px solid;
+  }
+  .history-item.truth { border-color: rgba(78, 205, 196, 0.5); }
+  .history-item.dare { border-color: rgba(255, 107, 107, 0.5); }
+  .history-item.pot-luck { border-color: rgba(255, 153, 68, 0.5); }
+  .history-label {
+    font-weight: 700;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-right: 0.4rem;
+  }
+  .history-item.truth .history-label { color: #4ecdc4; }
+  .history-item.dare .history-label { color: #ff6b6b; }
+  .history-item.pot-luck .history-label { color: #ff9944; }
+
+  @media (max-width: 600px) {
+    h1 { font-size: 2.2rem; }
+    .card { padding: 2rem 1.2rem; min-height: 200px; }
+    .card-text { font-size: 1.1rem; }
+    .char-btn svg { width: 95px; }
+    .char-btn .btn-label { font-size: 0.9rem; }
+    .character { width: 80px; height: 105px; }
+    .character.left { left: -15px; }
+    .character.right { right: -15px; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="starfield"></canvas>
+<!-- Floating cartoon items generated by JS -->
+
+<div class="container">
+  <h1>Truth or Dare</h1>
+  <p class="subtitle">an AEK x awgw production</p>
+
+  <div class="card-wrapper">
+    <div class="card idle" id="card">
+      <div class="card-text" id="cardText">Pick your poison...</div>
+    </div>
+  </div>
+
+  <div class="buttons">
+    <!-- Olive = Truth -->
+    <button class="char-btn truth-btn" onclick="generate('truth')">
+      <svg viewBox="0 0 110 130" xmlns="http://www.w3.org/2000/svg">
+        <!-- Shadow under -->
+        <ellipse cx="55" cy="122" rx="30" ry="5" fill="#000" opacity="0.15"/>
+        <!-- Body -->
+        <ellipse cx="55" cy="65" rx="38" ry="46" fill="#8CC63F"/>
+        <ellipse cx="55" cy="65" rx="38" ry="46" fill="none" stroke="#2D2D2D" stroke-width="4"/>
+        <!-- Darker green belly strip -->
+        <path d="M88,50 Q93,68 88,85 Q80,100 62,108 Q50,112 42,108 Q55,105 65,95 Q78,80 82,65 Q84,50 80,40 Z" fill="#3D9140" opacity="0.6"/>
+        <!-- Shine highlight -->
+        <ellipse cx="38" cy="42" rx="10" ry="18" fill="white" opacity="0.55" transform="rotate(-20,38,42)"/>
+        <!-- Pimento hole -->
+        <ellipse cx="55" cy="24" rx="10" ry="8" fill="#6B3A1F" stroke="#2D2D2D" stroke-width="2"/>
+        <!-- Text -->
+        <text x="55" y="78" text-anchor="middle" font-family="'Fredoka One', cursive" font-size="22" fill="white" stroke="#2D2D2D" stroke-width="1" letter-spacing="1">TRUTH</text>
+      </svg>
+    </button>
+
+    <!-- Lemon = Dare -->
+    <button class="char-btn dare-btn" onclick="generate('dare')">
+      <svg viewBox="0 0 120 130" xmlns="http://www.w3.org/2000/svg">
+        <!-- Shadow under -->
+        <ellipse cx="60" cy="122" rx="32" ry="5" fill="#000" opacity="0.15"/>
+        <!-- Body — lemon shape with pointy ends -->
+        <path d="M20,62 Q20,28 42,18 Q52,14 60,14 Q68,14 78,18 Q100,28 100,62 Q100,96 78,106 Q68,110 60,110 Q52,110 42,106 Q20,96 20,62 Z" fill="#FFE03A"/>
+        <path d="M20,62 Q20,28 42,18 Q52,14 60,14 Q68,14 78,18 Q100,28 100,62 Q100,96 78,106 Q68,110 60,110 Q52,110 42,106 Q20,96 20,62 Z" fill="none" stroke="#2D2D2D" stroke-width="4"/>
+        <!-- Darker yellow belly strip -->
+        <path d="M94,45 Q98,62 94,80 Q88,98 72,106 Q60,112 52,108 Q65,104 76,94 Q88,78 90,62 Q90,45 86,35 Z" fill="#D4B020" opacity="0.4"/>
+        <!-- Shine highlight -->
+        <ellipse cx="42" cy="40" rx="12" ry="20" fill="white" opacity="0.5" transform="rotate(-15,42,40)"/>
+        <!-- Leaf + stem -->
+        <path d="M58,14 Q56,6 60,2" stroke="#4A8C2A" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <ellipse cx="62" cy="3" rx="8" ry="4.5" fill="#6DAF4A" stroke="#2D2D2D" stroke-width="1.5" transform="rotate(-10,62,3)"/>
+        <!-- Subtle bumpy texture -->
+        <circle cx="72" cy="50" r="1.5" fill="#D4B020" opacity="0.3"/>
+        <circle cx="45" cy="82" r="1.2" fill="#D4B020" opacity="0.25"/>
+        <circle cx="68" cy="90" r="1" fill="#D4B020" opacity="0.2"/>
+        <circle cx="78" cy="70" r="1.3" fill="#D4B020" opacity="0.2"/>
+        <!-- Text -->
+        <text x="60" y="74" text-anchor="middle" font-family="'Fredoka One', cursive" font-size="24" fill="#2D2D2D" letter-spacing="1">DARE</text>
+      </svg>
+    </button>
+
+    <!-- Chilli = Pot Luck -->
+    <button class="char-btn potluck-btn" onclick="generate('potluck')">
+      <svg viewBox="0 0 110 140" xmlns="http://www.w3.org/2000/svg">
+        <!-- Shadow under -->
+        <ellipse cx="55" cy="132" rx="28" ry="5" fill="#000" opacity="0.15"/>
+        <!-- Body — curved chilli shape -->
+        <path d="M40,30 Q28,45 24,65 Q20,90 30,108 Q38,120 50,122 Q62,120 66,108 Q72,90 68,65 Q64,45 55,30 Z" fill="#E03030"/>
+        <path d="M40,30 Q28,45 24,65 Q20,90 30,108 Q38,120 50,122 Q62,120 66,108 Q72,90 68,65 Q64,45 55,30 Z" fill="none" stroke="#2D2D2D" stroke-width="4"/>
+        <!-- Darker red shadow strip -->
+        <path d="M60,35 Q66,50 68,65 Q72,90 66,108 Q62,118 54,122 Q60,118 64,108 Q70,88 66,62 Q62,42 56,32 Z" fill="#A01818" opacity="0.45"/>
+        <!-- Shine highlight -->
+        <ellipse cx="38" cy="58" rx="7" ry="22" fill="white" opacity="0.4" transform="rotate(-8,38,58)"/>
+        <!-- Stem -->
+        <path d="M47,30 Q44,18 50,10" stroke="#3D8C2A" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+        <path d="M47,28 Q38,16 34,12" stroke="#4AA830" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <path d="M50,26 Q56,14 62,12" stroke="#4AA830" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <!-- Calyx (green cap) -->
+        <ellipse cx="48" cy="30" rx="12" ry="6" fill="#3D8C2A" stroke="#2D2D2D" stroke-width="2"/>
+        <!-- Text — rotated slightly to follow the curve -->
+        <text x="46" y="72" text-anchor="middle" font-family="'Fredoka One', cursive" font-size="13" fill="white" stroke="#2D2D2D" stroke-width="0.5" letter-spacing="0.5" transform="rotate(-5,46,72)">POT</text>
+        <text x="46" y="92" text-anchor="middle" font-family="'Fredoka One', cursive" font-size="13" fill="white" stroke="#2D2D2D" stroke-width="0.5" letter-spacing="0.5" transform="rotate(-3,46,92)">LUCK</text>
+      </svg>
+    </button>
+  </div>
+
+  <button class="history-toggle" id="historyToggle" onclick="toggleHistory()" style="display:none;">
+    Show history
+  </button>
+  <div class="history" id="history" style="display:none;"></div>
+</div>
+
+<script>
+const truths = [
+  { text: "When did you last feel genuinely envious of a friend, and what does that envy tell you about what you actually want from life?" },
+  { text: "What's a relationship you let fade that you know you shouldn't have?" },
+  { text: "What ordinary, unglamorous thing do you secretly believe might be the key to happiness?" },
+  { text: "What's a word you've been mispronouncing for years and only recently discovered, to your absolute horror?" },
+  { text: "What's the most pretentious thing you've ever done and — crucially — did you enjoy it?" },
+  { text: "Is there a subject you once held forth on with great authority only to later discover you were comprehensively, magnificently wrong?" },
+  { text: "What piece of art or music moves you in a way you find slightly embarrassing to admit?" },
+  { text: "What's your most niche, anorak-ish obsession that you'd bore someone rigid about given half a chance?" },
+  { text: "What belief did you hold with absolute certainty ten years ago that now makes you cringe?" },
+  { text: "What's something society treats as sacred that you privately think is a bit ridiculous?" },
+  { text: "Who do you love so much it actually scares you, and have you told them recently?" },
+  { text: "What's the kindest thing anyone's ever done for you that you never properly acknowledged?" },
+  { text: "If you had to pick one hill to die on — one petty, inconsequential opinion — what would it be?" },
+  { text: "What's the most embarrassing thing you've ever done in public?" },
+  { text: "What's the biggest lie you've ever told and got away with?" },
+  { text: "What's the pettiest reason you've stopped talking to someone?" },
+  { text: "Have you ever pretended to be ill to get out of something? What was it?" },
+  { text: "What's the most childish thing you still do?" },
+  { text: "What's the most ridiculous thing you've cried over?" },
+  { text: "When was the last time you exaggerated a story badly and then got caught out?" },
+  { text: "What's the most passive-aggressive thing you've ever done to a neighbour?" },
+  { text: "What's a rule or law you break so regularly you've genuinely forgotten it's a rule?" },
+  { text: "What's a brand or company you publicly despise but privately still give money to?" },
+  { text: "If you could abolish one unwritten social rule without consequence, what would it be?" },
+  { text: "If you had to abolish one profession entirely for the betterment of humanity, which would you choose and how quickly would you pull the lever?" },
+  { text: "What's the weirdest habit you have when you're alone?" },
+  { text: "Have you ever given a friend a nickname they don't know about? What is it and how did they earn it?" },
+  { text: "What's the most elaborate lie you've told that somehow became the truth because you committed too hard?" },
+  { text: "What's the most dangerous thing you did as a child that your parents still don't know about?" },
+];
+
+const dares = [
+  { text: "Comment a laughing emoji on peoples selfies." },
+  { text: "Call your mama and ask her what your best and worst qualities are. Write down what she'll say before you call." },
+  { text: "Record on your phone the next person you see parallel parking." },
+  { text: "Open your last DM conversation and read it aloud. Every message." },
+  { text: "Send 'we need to talk' to the third person in your contacts. Don't follow up. Let it marinate." },
+  { text: "Say 'send that to me' when someone shows you a picture of their partner." },
+  { text: "Let the group go through your phone's camera roll for 30 seconds." },
+  { text: "Do your best impression of the person to your left." },
+  { text: "Text 'I know what you did' to someone random in your contacts. Do not elaborate." },
+  { text: "Send a voice note to the last person you texted saying 'I need to tell you something important' and then leave them hanging for 5 minutes." },
+  { text: "For the rest of the day, whenever you talk to a stranger, you must talk in an accent that is assigned to you." },
+  { text: "The next time you order or buy food or drink, complete the order with 'amirite?'" },
+  { text: "Ring a local business and, in the politest voice possible, ask if they have a returns policy on emotions." },
+  { text: "Go outside and compliment the next stranger you see. Make it specific. 'Nice shoes' doesn't count." },
+  { text: "Down whatever condiment the group picks. One full tablespoon. Grow up. You're fine." },
+  { text: "Stand outside and wave at every car that passes for two full minutes. Like you know them." },
+  { text: "Eat a snack without using your hands." },
+  { text: "Try to juggle 3 things given to you." },
+  { text: "Give a handwritten note to a stranger. You can write whatever you want on the note in advance." },
+  { text: "Face the people in the elevator instead of the door." },
+  { text: "Name the hypothetical title of your memoir. Right now. No thinking time." },
+  { text: "Critique every person in this room using a single word. Go round. No hesitation." },
+  { text: "Clap when the plane lands." },
+];
+
+const wildcards = [
+  { text: "\"Yeah I was counting the seconds\" — Andrew" },
+  { text: "\"Could not fucking wait to see you\" — Aya" },
+  { text: "\"Silly goose\" — Andrew" },
+  { text: "\"I was at the pub, nearly left and got on a plane straight to Sardinia\" — Andrew" },
+  { text: "\"It feels good to be known so well. No hiding.\" — Andrew" },
+  { text: "\"You bring out the best not just in me but in SO many other people\" — Aya" },
+  { text: "\"If you're powerless. And I'm powerless. Who's driving this thing?\" — Andrew. \"God.\" — Aya. \"Keep up the good work Mister God.\" — Andrew" },
+  { text: "\"A strong urge to ring you and say nothing in particular for ~90 mins\" — Andrew" },
+  { text: "\"Come visit me in my dreams\" — Aya. \"Not far to travel tonight\" — Andrew" },
+  { text: "\"You're too sexy not to be forgiven\" — Aya" },
+  { text: "\"Pocket Aya has been present throughout. It's been joyful to carry you around with me\" — Andrew" },
+  { text: "\"100% sent my head out to your pocket today\" — Aya" },
+  { text: "\"I was looking at moony and thinking of you\" — Aya" },
+  { text: "\"I wish I was with you. Failing that, I wish I was talking to you all day\" — Andrew" },
+  { text: "\"My heart's clearly safe in your hands\" — Aya" },
+  { text: "\"I love you Aya\" — Andrew. \"I love you — with all my heart\" — Aya" },
+  { text: "\"Little secret garden\" — Aya" },
+  { text: "\"In my head, you're me (and you're fucking great BYE)\" — Aya" },
+  { text: "\"I'm in your pocket going mimimimimi feed me\" — Aya" },
+  { text: "\"I really enjoy writing you a recap, because it's for you\" — Andrew" },
+  { text: "\"Mood — honestly, obsessed with you\" — Andrew" },
+  { text: "\"Hope I slip into your dreams tonight\" — Aya" },
+  { text: "\"I wasn't expecting it. Makes it so much more lovely\" — Aya" },
+  { text: "\"Always thinking of you\" — Andrew" },
+  { text: "\"Mostly they're too hot and too full of recycled germs and dirt\" — Andrew on jacuzzis" },
+];
+
+let usedTruths = [];
+let usedDares = [];
+let usedWildcards = [];
+let historyList = [];
+let isFlipping = false;
+
+function generate(type) {
+  if (isFlipping) return;
+
+  const pools = { truth: truths, dare: dares, potluck: wildcards };
+  const usedPools = { truth: usedTruths, dare: usedDares, potluck: usedWildcards };
+
+  const pool = pools[type];
+  const used = usedPools[type];
+
+  if (used.length >= pool.length) { used.length = 0; }
+
+  let available = pool.filter((_, i) => !used.includes(i));
+  let idx = Math.floor(Math.random() * available.length);
+  let chosen = available[idx];
+  let originalIdx = pool.indexOf(chosen);
+  used.push(originalIdx);
+
+  const card = document.getElementById('card');
+  const displayLabel = type === 'potluck' ? 'pot luck' : type;
+
+  isFlipping = true;
+  card.className = 'card flipping';
+
+  setTimeout(() => {
+    card.className = `card ${type}`;
+    card.innerHTML = `
+      <div class="card-label">${displayLabel}</div>
+      <div class="card-text">${chosen.text}</div>
+    `;
+    isFlipping = false;
+
+    if (type === 'dare' || type === 'potluck') spawnConfetti();
+  }, 300);
+
+  historyList.unshift({ type: displayLabel, text: chosen.text });
+  updateHistory();
+}
+
+function spawnConfetti() {
+  const colors = ['#ff6b6b','#4ecdc4','#ffe66d','#a78bfa','#f472b6','#34d399'];
+  for (let i = 0; i < 20; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    piece.style.left = Math.random() * 100 + 'vw';
+    piece.style.top = '-10px';
+    piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.animationDuration = (1.5 + Math.random()) + 's';
+    piece.style.animationDelay = (Math.random() * 0.3) + 's';
+    piece.style.width = (6 + Math.random() * 6) + 'px';
+    piece.style.height = (6 + Math.random() * 6) + 'px';
+    document.body.appendChild(piece);
+    setTimeout(() => piece.remove(), 3000);
+  }
+}
+
+function toggleHistory() {
+  const el = document.getElementById('history');
+  const btn = document.getElementById('historyToggle');
+  if (el.style.display === 'none') {
+    el.style.display = 'block';
+    btn.textContent = 'Hide history';
+  } else {
+    el.style.display = 'none';
+    btn.textContent = 'Show history';
+  }
+}
+
+function updateHistory() {
+  const toggle = document.getElementById('historyToggle');
+  const el = document.getElementById('history');
+  toggle.style.display = 'inline-block';
+  el.innerHTML = historyList.map(h => {
+    const cls = h.type.replace(/\s+/g, '-');
+    return `<div class="history-item ${cls}">
+      <span class="history-label">${h.type}:</span>${h.text}
+    </div>`;
+  }).join('');
+}
+
+// Floating background items — kawaii style with faces, arms, legs
+(function createFloatingItems() {
+  const svgs = {
+    lemon: `<svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
+      <!-- Body -->
+      <ellipse cx="50" cy="50" rx="28" ry="32" fill="#F7D636"/>
+      <ellipse cx="50" cy="50" rx="28" ry="32" fill="none" stroke="#E5C42E" stroke-width="1.5"/>
+      <!-- Leaf -->
+      <path d="M46,18 Q42,8 48,4" stroke="#5D8C3E" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <ellipse cx="49" cy="5" rx="6" ry="3.5" fill="#6DAF4A" transform="rotate(-10,49,5)"/>
+      <!-- Eyes -->
+      <circle cx="40" cy="45" r="3.5" fill="#2D2D2D"/>
+      <circle cx="60" cy="45" r="3.5" fill="#2D2D2D"/>
+      <circle cx="41.2" cy="43.8" r="1.2" fill="white"/>
+      <circle cx="61.2" cy="43.8" r="1.2" fill="white"/>
+      <!-- Eyebrows -->
+      <path d="M36,38 Q40,35 44,37" stroke="#2D2D2D" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+      <path d="M56,37 Q60,35 64,38" stroke="#2D2D2D" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+      <!-- Blush -->
+      <ellipse cx="34" cy="54" rx="5" ry="3" fill="#F2A0A0" opacity="0.6"/>
+      <ellipse cx="66" cy="54" rx="5" ry="3" fill="#F2A0A0" opacity="0.6"/>
+      <!-- Smile -->
+      <path d="M43,58 Q50,65 57,58" stroke="#2D2D2D" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <!-- Arms -->
+      <path d="M22,48 Q14,40 10,42" stroke="#2D2D2D" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      <path d="M78,48 Q86,38 90,40" stroke="#2D2D2D" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      <!-- Hands -->
+      <circle cx="10" cy="42" r="2" fill="#2D2D2D"/>
+      <circle cx="90" cy="40" r="2" fill="#2D2D2D"/>
+      <!-- Legs -->
+      <line x1="42" y1="80" x2="38" y2="98" stroke="#2D2D2D" stroke-width="1.8" stroke-linecap="round"/>
+      <line x1="58" y1="80" x2="62" y2="98" stroke="#2D2D2D" stroke-width="1.8" stroke-linecap="round"/>
+      <!-- Feet -->
+      <ellipse cx="36" cy="100" rx="5" ry="2.5" fill="#2D2D2D"/>
+      <ellipse cx="64" cy="100" rx="5" ry="2.5" fill="#2D2D2D"/>
+    </svg>`,
+
+    olive: `<svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
+      <!-- Body -->
+      <ellipse cx="50" cy="50" rx="22" ry="28" fill="#7BA656"/>
+      <ellipse cx="50" cy="50" rx="22" ry="28" fill="none" stroke="#5E8A3A" stroke-width="1.5"/>
+      <!-- Stem -->
+      <path d="M48,22 Q44,12 48,6" stroke="#5D8C3E" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <ellipse cx="49" cy="6" rx="5" ry="3" fill="#6DAF4A" transform="rotate(-10,49,6)"/>
+      <!-- Pimento hole -->
+      <ellipse cx="50" cy="40" rx="5" ry="4" fill="#C0392B" opacity="0.7"/>
+      <!-- Eyes -->
+      <circle cx="42" cy="48" r="3" fill="#2D2D2D"/>
+      <circle cx="58" cy="48" r="3" fill="#2D2D2D"/>
+      <circle cx="43" cy="46.8" r="1" fill="white"/>
+      <circle cx="59" cy="46.8" r="1" fill="white"/>
+      <!-- Eyebrows -->
+      <path d="M38,42 Q42,40 46,42" stroke="#2D2D2D" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+      <path d="M54,42 Q58,40 62,42" stroke="#2D2D2D" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+      <!-- Blush -->
+      <ellipse cx="36" cy="56" rx="4" ry="2.5" fill="#F2A0A0" opacity="0.5"/>
+      <ellipse cx="64" cy="56" rx="4" ry="2.5" fill="#F2A0A0" opacity="0.5"/>
+      <!-- Smile -->
+      <path d="M44,60 Q50,66 56,60" stroke="#2D2D2D" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <!-- Arms -->
+      <path d="M28,50 Q18,44 14,48" stroke="#2D2D2D" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      <path d="M72,50 Q80,42 86,44" stroke="#2D2D2D" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      <circle cx="14" cy="48" r="2" fill="#2D2D2D"/>
+      <circle cx="86" cy="44" r="2" fill="#2D2D2D"/>
+      <!-- Legs -->
+      <line x1="43" y1="76" x2="39" y2="96" stroke="#2D2D2D" stroke-width="1.8" stroke-linecap="round"/>
+      <line x1="57" y1="76" x2="61" y2="96" stroke="#2D2D2D" stroke-width="1.8" stroke-linecap="round"/>
+      <ellipse cx="37" cy="98" rx="5" ry="2.5" fill="#2D2D2D"/>
+      <ellipse cx="63" cy="98" rx="5" ry="2.5" fill="#2D2D2D"/>
+    </svg>`,
+
+    croissant: `<svg viewBox="0 0 120 110" xmlns="http://www.w3.org/2000/svg">
+      <!-- Body -->
+      <path d="M20,50 Q25,22 50,16 Q70,12 85,22 Q100,34 95,55 Q88,46 76,42 Q64,39 52,44 Q40,50 32,56 Z" fill="#E0A840" stroke="#C4902A" stroke-width="1.5"/>
+      <!-- Score lines -->
+      <path d="M30,48 Q38,32 52,24" stroke="#ECBF5A" stroke-width="1.5" fill="none" opacity="0.5" stroke-linecap="round"/>
+      <path d="M42,54 Q50,40 64,32" stroke="#ECBF5A" stroke-width="1.2" fill="none" opacity="0.4" stroke-linecap="round"/>
+      <!-- Eyes -->
+      <circle cx="52" cy="38" r="3" fill="#2D2D2D"/>
+      <circle cx="72" cy="34" r="3" fill="#2D2D2D"/>
+      <circle cx="53" cy="36.8" r="1" fill="white"/>
+      <circle cx="73" cy="32.8" r="1" fill="white"/>
+      <!-- Eyebrows -->
+      <path d="M48,32 Q52,30 56,32" stroke="#2D2D2D" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+      <path d="M68,28 Q72,26 76,28" stroke="#2D2D2D" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+      <!-- Blush -->
+      <ellipse cx="46" cy="44" rx="4" ry="2.5" fill="#F2A0A0" opacity="0.5"/>
+      <ellipse cx="78" cy="40" rx="4" ry="2.5" fill="#F2A0A0" opacity="0.5"/>
+      <!-- Smile -->
+      <path d="M56,46 Q62,52 68,44" stroke="#2D2D2D" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <!-- Arms -->
+      <path d="M22,54 Q12,50 8,54" stroke="#2D2D2D" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      <path d="M94,48 Q104,42 108,46" stroke="#2D2D2D" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      <circle cx="8" cy="54" r="2" fill="#2D2D2D"/>
+      <circle cx="108" cy="46" r="2" fill="#2D2D2D"/>
+      <!-- Legs -->
+      <line x1="46" y1="56" x2="40" y2="78" stroke="#2D2D2D" stroke-width="1.8" stroke-linecap="round"/>
+      <line x1="70" y1="54" x2="76" y2="76" stroke="#2D2D2D" stroke-width="1.8" stroke-linecap="round"/>
+      <ellipse cx="38" cy="80" rx="5" ry="2.5" fill="#2D2D2D"/>
+      <ellipse cx="78" cy="78" rx="5" ry="2.5" fill="#2D2D2D"/>
+    </svg>`,
+
+    sun: `<svg viewBox="0 0 110 130" xmlns="http://www.w3.org/2000/svg">
+      <!-- Rays -->
+      <g stroke="#FFD54F" stroke-width="3.5" stroke-linecap="round">
+        <line x1="55" y1="6" x2="55" y2="18"/>
+        <line x1="55" y1="72" x2="55" y2="84"/>
+        <line x1="16" y1="45" x2="28" y2="45"/>
+        <line x1="82" y1="45" x2="94" y2="45"/>
+        <line x1="27" y1="18" x2="35" y2="26"/>
+        <line x1="75" y1="64" x2="83" y2="72"/>
+        <line x1="83" y1="18" x2="75" y2="26"/>
+        <line x1="35" y1="64" x2="27" y2="72"/>
+      </g>
+      <!-- Body -->
+      <circle cx="55" cy="45" r="22" fill="#FFD54F"/>
+      <circle cx="55" cy="45" r="22" fill="none" stroke="#F5C236" stroke-width="1.5"/>
+      <!-- Eyes -->
+      <circle cx="47" cy="42" r="3" fill="#2D2D2D"/>
+      <circle cx="63" cy="42" r="3" fill="#2D2D2D"/>
+      <circle cx="48" cy="40.8" r="1" fill="white"/>
+      <circle cx="64" cy="40.8" r="1" fill="white"/>
+      <!-- Eyebrows -->
+      <path d="M43,36 Q47,33 51,35" stroke="#2D2D2D" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+      <path d="M59,35 Q63,33 67,36" stroke="#2D2D2D" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+      <!-- Blush -->
+      <ellipse cx="40" cy="50" rx="4.5" ry="2.5" fill="#F2A0A0" opacity="0.55"/>
+      <ellipse cx="70" cy="50" rx="4.5" ry="2.5" fill="#F2A0A0" opacity="0.55"/>
+      <!-- Smile -->
+      <path d="M47,53 Q55,60 63,53" stroke="#2D2D2D" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <!-- Arms -->
+      <path d="M33,50 Q22,46 18,50" stroke="#2D2D2D" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      <path d="M77,50 Q86,44 92,46" stroke="#2D2D2D" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      <circle cx="18" cy="50" r="2" fill="#2D2D2D"/>
+      <circle cx="92" cy="46" r="2" fill="#2D2D2D"/>
+      <!-- Legs -->
+      <line x1="47" y1="66" x2="43" y2="88" stroke="#2D2D2D" stroke-width="1.8" stroke-linecap="round"/>
+      <line x1="63" y1="66" x2="67" y2="88" stroke="#2D2D2D" stroke-width="1.8" stroke-linecap="round"/>
+      <ellipse cx="41" cy="90" rx="5" ry="2.5" fill="#2D2D2D"/>
+      <ellipse cx="69" cy="90" rx="5" ry="2.5" fill="#2D2D2D"/>
+    </svg>`,
+
+    moon: `<svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
+      <!-- Body (crescent) -->
+      <path d="M65,10 Q28,18 24,50 Q20,78 50,88 Q32,76 34,50 Q36,26 65,10 Z" fill="#F5E6A3" stroke="#D4C476" stroke-width="1.5"/>
+      <!-- Eyes -->
+      <circle cx="40" cy="46" r="3" fill="#2D2D2D"/>
+      <circle cx="54" cy="40" r="3" fill="#2D2D2D"/>
+      <circle cx="41" cy="44.8" r="1" fill="white"/>
+      <circle cx="55" cy="38.8" r="1" fill="white"/>
+      <!-- Eyebrows -->
+      <path d="M36,40 Q40,37 44,39" stroke="#2D2D2D" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+      <path d="M50,34 Q54,31 58,33" stroke="#2D2D2D" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+      <!-- Blush -->
+      <ellipse cx="35" cy="54" rx="4" ry="2.5" fill="#F2A0A0" opacity="0.5"/>
+      <ellipse cx="56" cy="50" rx="3.5" ry="2" fill="#F2A0A0" opacity="0.5"/>
+      <!-- Sleepy smile -->
+      <path d="M41,56 Q47,62 53,54" stroke="#2D2D2D" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <!-- Arms -->
+      <path d="M26,55 Q16,52 12,56" stroke="#2D2D2D" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      <path d="M58,58 Q68,52 74,54" stroke="#2D2D2D" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      <circle cx="12" cy="56" r="2" fill="#2D2D2D"/>
+      <circle cx="74" cy="54" r="2" fill="#2D2D2D"/>
+      <!-- Legs -->
+      <line x1="38" y1="82" x2="34" y2="102" stroke="#2D2D2D" stroke-width="1.8" stroke-linecap="round"/>
+      <line x1="48" y1="86" x2="52" y2="104" stroke="#2D2D2D" stroke-width="1.8" stroke-linecap="round"/>
+      <ellipse cx="32" cy="104" rx="5" ry="2.5" fill="#2D2D2D"/>
+      <ellipse cx="54" cy="106" rx="5" ry="2.5" fill="#2D2D2D"/>
+      <!-- Stars around -->
+      <polygon points="76,20 78,26 84,26 79,30 81,36 76,32 71,36 73,30 68,26 74,26" fill="#F5E6A3" opacity="0.6" transform="scale(0.5) translate(140,20)"/>
+      <polygon points="76,20 78,26 84,26 79,30 81,36 76,32 71,36 73,30 68,26 74,26" fill="#F5E6A3" opacity="0.4" transform="scale(0.35) translate(220,80)"/>
+    </svg>`
+  };
+
+  const types = Object.keys(svgs);
+  const items = [];
+
+  // Create 16 floating items spread across the viewport
+  for (let i = 0; i < 16; i++) {
+    const type = types[i % types.length];
+    const el = document.createElement('div');
+    el.className = 'floating-item';
+    el.innerHTML = svgs[type];
+    el.querySelector('svg').style.width = (40 + Math.random() * 30) + 'px';
+    el.querySelector('svg').style.height = 'auto';
+
+    // Spread items across a grid to avoid clumping
+    const col = i % 4;
+    const row = Math.floor(i / 4);
+    el.style.left = (col * 25 + Math.random() * 15 + 2) + 'vw';
+    el.style.top = (row * 25 + Math.random() * 15 + 2) + 'vh';
+
+    const anim = i % 2 === 0 ? 'drift' : 'driftAlt';
+    const duration = 18 + Math.random() * 14;
+    const delay = -(Math.random() * 20);
+    el.style.animation = `${anim} ${duration}s ${delay}s infinite ease-in-out`;
+    el.style.opacity = 0.12 + Math.random() * 0.1;
+
+    document.body.appendChild(el);
+  }
+})();
+
+// Beautiful HD starry night sky
+(function renderStarfield() {
+  const canvas = document.getElementById('starfield');
+  const ctx = canvas.getContext('2d');
+  let w, h, stars, shootingStars;
+
+  function resize() {
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+    init();
+  }
+
+  function init() {
+    // Layers of stars for depth
+    stars = [];
+    for (let i = 0; i < 600; i++) {
+      stars.push({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        r: Math.random() * 1.8 + 0.2,
+        brightness: Math.random(),
+        twinkleSpeed: 0.005 + Math.random() * 0.02,
+        twinkleOffset: Math.random() * Math.PI * 2,
+        // Color temp: most white, some warm, some cool
+        hue: Math.random() < 0.7 ? 0 : (Math.random() < 0.5 ? 30 : 220),
+        sat: Math.random() < 0.7 ? 0 : 20 + Math.random() * 40
+      });
+    }
+    // Brighter feature stars
+    for (let i = 0; i < 30; i++) {
+      stars.push({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        r: 1.8 + Math.random() * 1.2,
+        brightness: 0.7 + Math.random() * 0.3,
+        twinkleSpeed: 0.01 + Math.random() * 0.03,
+        twinkleOffset: Math.random() * Math.PI * 2,
+        hue: [0, 30, 200, 240][Math.floor(Math.random() * 4)],
+        sat: 15 + Math.random() * 30
+      });
+    }
+
+    shootingStars = [];
+  }
+
+  function spawnShootingStar() {
+    if (shootingStars.length < 2 && Math.random() < 0.003) {
+      shootingStars.push({
+        x: Math.random() * w * 0.8,
+        y: Math.random() * h * 0.4,
+        len: 80 + Math.random() * 100,
+        speed: 6 + Math.random() * 6,
+        angle: Math.PI / 6 + Math.random() * 0.4,
+        life: 1,
+        decay: 0.015 + Math.random() * 0.01
+      });
+    }
+  }
+
+  let time = 0;
+  function draw() {
+    time += 0.016;
+    ctx.clearRect(0, 0, w, h);
+
+    // Sky gradient — deep navy to near-black
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, '#05061A');
+    grad.addColorStop(0.3, '#0A0E2A');
+    grad.addColorStop(0.6, '#0D1233');
+    grad.addColorStop(1, '#060818');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+
+    // Subtle nebula glow
+    const neb1 = ctx.createRadialGradient(w * 0.2, h * 0.3, 0, w * 0.2, h * 0.3, w * 0.35);
+    neb1.addColorStop(0, 'rgba(60, 40, 120, 0.06)');
+    neb1.addColorStop(0.5, 'rgba(40, 20, 80, 0.03)');
+    neb1.addColorStop(1, 'transparent');
+    ctx.fillStyle = neb1;
+    ctx.fillRect(0, 0, w, h);
+
+    const neb2 = ctx.createRadialGradient(w * 0.75, h * 0.6, 0, w * 0.75, h * 0.6, w * 0.3);
+    neb2.addColorStop(0, 'rgba(30, 60, 100, 0.05)');
+    neb2.addColorStop(0.5, 'rgba(20, 40, 80, 0.02)');
+    neb2.addColorStop(1, 'transparent');
+    ctx.fillStyle = neb2;
+    ctx.fillRect(0, 0, w, h);
+
+    // Milky way band — subtle diagonal wash
+    ctx.save();
+    ctx.translate(w * 0.5, h * 0.5);
+    ctx.rotate(-0.5);
+    const milky = ctx.createRadialGradient(0, 0, 0, 0, 0, w * 0.6);
+    milky.addColorStop(0, 'rgba(180, 180, 220, 0.018)');
+    milky.addColorStop(0.3, 'rgba(140, 140, 180, 0.008)');
+    milky.addColorStop(1, 'transparent');
+    ctx.fillStyle = milky;
+    ctx.fillRect(-w, -h * 0.15, w * 2, h * 0.3);
+    ctx.restore();
+
+    // Thin waxing crescent moon — photorealistic, lit on right edge
+    const moonX = w * 0.78;
+    const moonY = h * 0.22;
+    const moonR = Math.min(w, h) * 0.20;
+
+    // Subtle outer aura — soft glow around the crescent
+    for (let layer = 4; layer >= 1; layer--) {
+      const auraR = moonR * (1.5 + layer * 0.6);
+      const auraAlpha = 0.006 * layer;
+      const aura = ctx.createRadialGradient(moonX, moonY, moonR * 0.3, moonX, moonY, auraR);
+      aura.addColorStop(0, `rgba(220, 215, 190, ${auraAlpha})`);
+      aura.addColorStop(0.4, `rgba(200, 195, 170, ${auraAlpha * 0.4})`);
+      aura.addColorStop(1, 'transparent');
+      ctx.fillStyle = aura;
+      ctx.beginPath();
+      ctx.arc(moonX, moonY, auraR, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Draw thin crescent using two overlapping circles
+    // The lit part is a thin sliver on the RIGHT edge
+    ctx.save();
+
+    // Clip to the full moon circle
+    ctx.beginPath();
+    ctx.arc(moonX, moonY, moonR, 0, Math.PI * 2);
+    ctx.clip();
+
+    // Surface fill — photorealistic lunar grey/cream
+    const baseFill = ctx.createRadialGradient(moonX + moonR * 0.3, moonY, 0, moonX, moonY, moonR);
+    baseFill.addColorStop(0, '#F5F0E0');
+    baseFill.addColorStop(0.3, '#E8E0CC');
+    baseFill.addColorStop(0.6, '#D8CEB8');
+    baseFill.addColorStop(1, '#C0B8A0');
+    ctx.fillStyle = baseFill;
+    ctx.beginPath();
+    ctx.arc(moonX, moonY, moonR, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Maria (dark patches) on the lit sliver
+    const maria = [
+      { x: 0.32, y: -0.15, r: 0.14, a: 0.12 },
+      { x: 0.38, y: 0.2, r: 0.1, a: 0.1 },
+      { x: 0.28, y: 0.4, r: 0.12, a: 0.08 },
+      { x: 0.35, y: -0.4, r: 0.08, a: 0.06 },
+      { x: 0.25, y: 0.0, r: 0.1, a: 0.05 },
+      { x: 0.4, y: 0.45, r: 0.06, a: 0.07 },
+    ];
+    for (const m of maria) {
+      const mx = moonX + m.x * moonR;
+      const my = moonY + m.y * moonR;
+      const mr = m.r * moonR;
+      const mg = ctx.createRadialGradient(mx, my, 0, mx, my, mr);
+      mg.addColorStop(0, `rgba(120, 110, 90, ${m.a})`);
+      mg.addColorStop(0.7, `rgba(100, 90, 70, ${m.a * 0.4})`);
+      mg.addColorStop(1, 'transparent');
+      ctx.fillStyle = mg;
+      ctx.beginPath();
+      ctx.arc(mx, my, mr, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Craters on the lit edge
+    const craters = [
+      { x: 0.35, y: 0.15, r: 0.04 },
+      { x: 0.3, y: -0.3, r: 0.035 },
+      { x: 0.38, y: 0.4, r: 0.03 },
+      { x: 0.42, y: -0.1, r: 0.025 },
+      { x: 0.28, y: 0.55, r: 0.04 },
+      { x: 0.33, y: -0.5, r: 0.03 },
+      { x: 0.4, y: 0.6, r: 0.025 },
+      { x: 0.36, y: -0.6, r: 0.02 },
+      { x: 0.3, y: 0.25, r: 0.02 },
+    ];
+    for (const c of craters) {
+      const cx2 = moonX + c.x * moonR;
+      const cy2 = moonY + c.y * moonR;
+      const cr = c.r * moonR;
+      ctx.beginPath();
+      ctx.arc(cx2, cy2, cr, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(90, 80, 60, 0.15)';
+      ctx.lineWidth = cr * 0.4;
+      ctx.stroke();
+      // Bright floor
+      const cf = ctx.createRadialGradient(cx2, cy2, 0, cx2, cy2, cr * 0.6);
+      cf.addColorStop(0, 'rgba(255, 250, 235, 0.08)');
+      cf.addColorStop(1, 'transparent');
+      ctx.fillStyle = cf;
+      ctx.beginPath();
+      ctx.arc(cx2, cy2, cr * 0.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Shadow disc — covers most of the moon, leaving only a thin crescent on the right
+    // Shadow circle is offset to the LEFT to leave a thin sliver on the right
+    const shadowOffX = -moonR * 0.22;
+    const shadowR = moonR * 0.90;
+
+    // Multi-layer soft shadow for realistic terminator
+    for (let sl = 0; sl < 8; sl++) {
+      const sOff = shadowOffX - sl * moonR * 0.008;
+      const sR = shadowR + sl * moonR * 0.005;
+      const sAlpha = sl === 0 ? 1 : (0.6 / (sl * 0.8));
+      const sCol = sl === 0 ? '#05061A' : `rgba(5,6,26,${Math.min(sAlpha, 1)})`;
+      ctx.fillStyle = sCol;
+      ctx.beginPath();
+      ctx.arc(moonX + sOff, moonY, sR, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Very subtle earthshine on the dark side
+    const earthshine = ctx.createRadialGradient(moonX - moonR * 0.2, moonY, moonR * 0.1, moonX - moonR * 0.2, moonY, moonR * 0.9);
+    earthshine.addColorStop(0, 'rgba(60, 70, 90, 0.025)');
+    earthshine.addColorStop(0.5, 'rgba(50, 55, 70, 0.012)');
+    earthshine.addColorStop(1, 'transparent');
+    ctx.fillStyle = earthshine;
+    ctx.beginPath();
+    ctx.arc(moonX, moonY, moonR, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+
+    // Bright limb highlight — the bright right edge of the crescent
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(moonX, moonY, moonR, 0, Math.PI * 2);
+    ctx.clip();
+    // Create the bright limb along the right edge
+    const limbGlow = ctx.createRadialGradient(moonX + moonR * 0.85, moonY, moonR * 0.02, moonX + moonR * 0.6, moonY, moonR * 0.5);
+    limbGlow.addColorStop(0, 'rgba(255,252,240,0.5)');
+    limbGlow.addColorStop(0.3, 'rgba(255,250,230,0.2)');
+    limbGlow.addColorStop(1, 'transparent');
+    ctx.fillStyle = limbGlow;
+    ctx.beginPath();
+    ctx.arc(moonX + moonR * 0.6, moonY, moonR * 0.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // Draw stars
+    for (const s of stars) {
+      const twinkle = 0.4 + 0.6 * (0.5 + 0.5 * Math.sin(time * s.twinkleSpeed * 60 + s.twinkleOffset));
+      const alpha = s.brightness * twinkle;
+      const l = 85 + 15 * twinkle;
+
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = `hsla(${s.hue}, ${s.sat}%, ${l}%, ${alpha})`;
+      ctx.fill();
+
+      // Glow for brighter stars
+      if (s.r > 1.5) {
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r * 3, 0, Math.PI * 2);
+        const glowGrad = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.r * 3);
+        glowGrad.addColorStop(0, `hsla(${s.hue}, ${s.sat}%, 90%, ${alpha * 0.2})`);
+        glowGrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = glowGrad;
+        ctx.fill();
+      }
+    }
+
+    // Shooting stars
+    spawnShootingStar();
+    for (let i = shootingStars.length - 1; i >= 0; i--) {
+      const ss = shootingStars[i];
+      const dx = Math.cos(ss.angle) * ss.len;
+      const dy = Math.sin(ss.angle) * ss.len;
+      const tailGrad = ctx.createLinearGradient(ss.x, ss.y, ss.x + dx, ss.y + dy);
+      tailGrad.addColorStop(0, `rgba(255,255,255,${ss.life * 0.8})`);
+      tailGrad.addColorStop(1, 'transparent');
+      ctx.strokeStyle = tailGrad;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(ss.x, ss.y);
+      ctx.lineTo(ss.x + dx, ss.y + dy);
+      ctx.stroke();
+
+      // Head glow
+      const headGlow = ctx.createRadialGradient(ss.x, ss.y, 0, ss.x, ss.y, 4);
+      headGlow.addColorStop(0, `rgba(255,255,255,${ss.life})`);
+      headGlow.addColorStop(1, 'transparent');
+      ctx.fillStyle = headGlow;
+      ctx.beginPath();
+      ctx.arc(ss.x, ss.y, 4, 0, Math.PI * 2);
+      ctx.fill();
+
+      ss.x += Math.cos(ss.angle) * ss.speed;
+      ss.y += Math.sin(ss.angle) * ss.speed;
+      ss.life -= ss.decay;
+      if (ss.life <= 0) shootingStars.splice(i, 1);
+    }
+
+    // === Two cartoon people sitting on the moon, holding hands ===
+    {
+      const cs = moonR * 0.055;
+      const hR = cs * 1.6;
+      const bW = cs * 2.5;
+      const bH = cs * 2.8;
+      const lLen = cs * 2.8;
+
+      const ppl = [
+        { ang: Math.PI * 0.44, isW: true },
+        { ang: Math.PI * 0.32, isW: false }
+      ];
+      const shPts = [];
+
+      for (const p of ppl) {
+        const sX = moonX + (moonR + cs * 0.1) * Math.cos(p.ang);
+        const sY = moonY + (moonR + cs * 0.1) * Math.sin(p.ang);
+        const tilt = (p.ang - Math.PI * 0.5) * 0.45;
+        const skin = p.isW ? '#D4956B' : '#EDCBA8';
+        const shirt = p.isW ? '#C0392B' : '#1A1A1A';
+        const hair = p.isW ? '#2C1810' : '#8B6E4E';
+        const legCol = p.isW ? skin : '#2A3A5C'; // woman: bare legs, man: dark trousers
+        const cosT = Math.cos(tilt);
+        const sinT = Math.sin(tilt);
+
+        ctx.save();
+        ctx.translate(sX, sY);
+        ctx.rotate(tilt);
+
+        // LEGS — man wears dark trousers, woman bare legs
+        ctx.lineCap = 'round';
+        [[-bW * 0.22, -bW * 0.32], [bW * 0.22, bW * 0.18]].forEach(([startX, endX]) => {
+          ctx.strokeStyle = '#2D2D2D';
+          ctx.lineWidth = cs * 0.55;
+          ctx.beginPath();
+          ctx.moveTo(startX, 0);
+          ctx.lineTo(endX, lLen);
+          ctx.stroke();
+          ctx.strokeStyle = legCol;
+          ctx.lineWidth = cs * 0.38;
+          ctx.beginPath();
+          ctx.moveTo(startX, 0);
+          ctx.lineTo(endX, lLen);
+          ctx.stroke();
+        });
+        // Shoes
+        ctx.fillStyle = p.isW ? '#2D2D2D' : '#3A3A3A';
+        ctx.strokeStyle = '#2D2D2D';
+        ctx.lineWidth = cs * 0.08;
+        ctx.beginPath();
+        ctx.ellipse(-bW * 0.34, lLen + cs * 0.12, cs * 0.42, cs * 0.22, -0.2, 0, Math.PI * 2);
+        ctx.fill(); ctx.stroke();
+        ctx.beginPath();
+        ctx.ellipse(bW * 0.2, lLen + cs * 0.12, cs * 0.42, cs * 0.22, 0.2, 0, Math.PI * 2);
+        ctx.fill(); ctx.stroke();
+
+        // OUTER ARM
+        const outerS = p.isW ? -1 : 1;
+        ctx.strokeStyle = '#2D2D2D';
+        ctx.lineWidth = cs * 0.45;
+        ctx.beginPath();
+        ctx.moveTo(outerS * bW * 0.42, -bH * 0.8);
+        ctx.quadraticCurveTo(outerS * bW * 0.85, -bH * 0.25, outerS * bW * 0.65, cs * 0.2);
+        ctx.stroke();
+        ctx.strokeStyle = skin;
+        ctx.lineWidth = cs * 0.3;
+        ctx.beginPath();
+        ctx.moveTo(outerS * bW * 0.42, -bH * 0.8);
+        ctx.quadraticCurveTo(outerS * bW * 0.85, -bH * 0.25, outerS * bW * 0.65, cs * 0.2);
+        ctx.stroke();
+        ctx.fillStyle = skin;
+        ctx.strokeStyle = '#2D2D2D';
+        ctx.lineWidth = cs * 0.1;
+        ctx.beginPath();
+        ctx.arc(outerS * bW * 0.65, cs * 0.3, cs * 0.25, 0, Math.PI * 2);
+        ctx.fill(); ctx.stroke();
+
+        // BODY
+        const bt = -bH;
+        ctx.beginPath();
+        ctx.moveTo(-bW * 0.42, cs * 0.05);
+        ctx.lineTo(-bW * 0.32, bt);
+        ctx.quadraticCurveTo(0, bt - cs * 0.15, bW * 0.32, bt);
+        ctx.lineTo(bW * 0.42, cs * 0.05);
+        ctx.closePath();
+        ctx.fillStyle = shirt;
+        ctx.fill();
+        ctx.strokeStyle = '#2D2D2D';
+        ctx.lineWidth = cs * 0.25;
+        ctx.stroke();
+        // Shadow strip
+        ctx.beginPath();
+        ctx.moveTo(bW * 0.18, bt);
+        ctx.lineTo(bW * 0.42, cs * 0.05);
+        ctx.lineTo(bW * 0.32, cs * 0.05);
+        ctx.lineTo(bW * 0.12, bt + cs * 0.15);
+        ctx.closePath();
+        ctx.fillStyle = p.isW ? 'rgba(100,20,20,0.4)' : 'rgba(0,0,0,0.3)';
+        ctx.fill();
+        // Shine
+        ctx.beginPath();
+        ctx.ellipse(-bW * 0.12, bt + bH * 0.4, cs * 0.3, cs * 0.9, -0.1, 0, Math.PI * 2);
+        ctx.fillStyle = p.isW ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.05)';
+        ctx.fill();
+
+        // Straps for woman / sleeves for man
+        if (p.isW) {
+          ctx.strokeStyle = '#C0392B';
+          ctx.lineWidth = cs * 0.35;
+          ctx.beginPath(); ctx.moveTo(-bW * 0.2, bt); ctx.lineTo(-cs * 0.4, bt - cs * 1.0); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(bW * 0.2, bt); ctx.lineTo(cs * 0.4, bt - cs * 1.0); ctx.stroke();
+          ctx.strokeStyle = '#2D2D2D';
+          ctx.lineWidth = cs * 0.12;
+          ctx.beginPath(); ctx.moveTo(-bW * 0.2, bt); ctx.lineTo(-cs * 0.4, bt - cs * 1.0); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(bW * 0.2, bt); ctx.lineTo(cs * 0.4, bt - cs * 1.0); ctx.stroke();
+        } else {
+          // T-shirt sleeves
+          ctx.fillStyle = '#1A1A1A';
+          ctx.strokeStyle = '#2D2D2D';
+          ctx.lineWidth = cs * 0.12;
+          ctx.beginPath();
+          ctx.moveTo(-bW * 0.32, bt + cs * 0.1);
+          ctx.lineTo(-bW * 0.52, bt + cs * 0.6);
+          ctx.lineTo(-bW * 0.42, bt + cs * 1.1);
+          ctx.lineTo(-bW * 0.28, bt + cs * 0.6);
+          ctx.closePath();
+          ctx.fill(); ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(bW * 0.32, bt + cs * 0.1);
+          ctx.lineTo(bW * 0.52, bt + cs * 0.6);
+          ctx.lineTo(bW * 0.42, bt + cs * 1.1);
+          ctx.lineTo(bW * 0.28, bt + cs * 0.6);
+          ctx.closePath();
+          ctx.fill(); ctx.stroke();
+        }
+
+        // NECK
+        ctx.fillStyle = skin;
+        ctx.strokeStyle = '#2D2D2D';
+        ctx.lineWidth = cs * 0.15;
+        const nkH = cs * 0.6;
+        ctx.fillRect(-cs * 0.35, bt - nkH, cs * 0.7, nkH + cs * 0.05);
+        ctx.strokeRect(-cs * 0.35, bt - nkH, cs * 0.7, nkH + cs * 0.05);
+
+        // EARS — draw BEFORE head so they sit behind it
+        if (!p.isW) {
+          ctx.fillStyle = skin;
+          ctx.strokeStyle = '#2D2D2D';
+          ctx.lineWidth = cs * 0.12;
+          const headY = bt - nkH - hR;
+          // Small C-shaped ears tucked against head
+          ctx.beginPath();
+          ctx.arc(-hR * 0.88, headY + hR * 0.05, cs * 0.28, Math.PI * 0.4, Math.PI * 1.6);
+          ctx.closePath();
+          ctx.fill(); ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(hR * 0.88, headY + hR * 0.05, cs * 0.28, Math.PI * 1.4, Math.PI * 0.6, true);
+          ctx.closePath();
+          ctx.fill(); ctx.stroke();
+        }
+
+        // HEAD
+        const headY = bt - nkH - hR;
+        ctx.beginPath();
+        ctx.arc(0, headY, hR, 0, Math.PI * 2);
+        ctx.fillStyle = skin;
+        ctx.fill();
+        ctx.strokeStyle = '#2D2D2D';
+        ctx.lineWidth = cs * 0.25;
+        ctx.stroke();
+        // Head shadow — clip to lower half so it doesn't darken the forehead
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(-hR * 1.2, headY, hR * 2.4, hR * 1.2);
+        ctx.clip();
+        ctx.beginPath();
+        ctx.ellipse(hR * 0.35, headY + hR * 0.15, hR * 0.25, hR * 0.5, 0, 0, Math.PI * 2);
+        ctx.fillStyle = p.isW ? 'rgba(140,80,40,0.12)' : 'rgba(170,130,80,0.10)';
+        ctx.fill();
+        ctx.restore();
+        // Head shine
+        ctx.beginPath();
+        ctx.ellipse(-hR * 0.3, headY - hR * 0.15, hR * 0.15, hR * 0.25, -0.3, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,255,255,0.15)';
+        ctx.fill();
+
+        // HAIR
+        if (p.isW) {
+          // Dark curly hair — DOWN, chin-length, loose curls framing face
+          ctx.fillStyle = hair;
+          ctx.strokeStyle = '#2D2D2D';
+          ctx.lineWidth = cs * 0.12;
+          // Main hair volume on top of head
+          ctx.beginPath();
+          ctx.moveTo(-hR * 0.82, headY + hR * 0.05);
+          ctx.quadraticCurveTo(-hR * 0.95, headY - hR * 0.45, -hR * 0.55, headY - hR * 0.82);
+          ctx.quadraticCurveTo(0, headY - hR * 1.05, hR * 0.55, headY - hR * 0.82);
+          ctx.quadraticCurveTo(hR * 0.95, headY - hR * 0.45, hR * 0.82, headY + hR * 0.05);
+          // Inner curve back across top of head
+          ctx.quadraticCurveTo(hR * 0.5, headY - hR * 0.5, 0, headY - hR * 0.6);
+          ctx.quadraticCurveTo(-hR * 0.5, headY - hR * 0.5, -hR * 0.82, headY + hR * 0.05);
+          ctx.closePath();
+          ctx.fill(); ctx.stroke();
+          // Left side hair flowing down past face — curly chunks
+          ctx.beginPath();
+          ctx.moveTo(-hR * 0.82, headY + hR * 0.05);
+          ctx.quadraticCurveTo(-hR * 1.0, headY + hR * 0.35, -hR * 0.85, headY + hR * 0.65);
+          ctx.quadraticCurveTo(-hR * 0.7, headY + hR * 0.85, -hR * 0.55, headY + hR * 1.0);
+          ctx.quadraticCurveTo(-hR * 0.4, headY + hR * 0.85, -hR * 0.55, headY + hR * 0.55);
+          ctx.quadraticCurveTo(-hR * 0.65, headY + hR * 0.3, -hR * 0.82, headY + hR * 0.05);
+          ctx.closePath();
+          ctx.fill(); ctx.stroke();
+          // Right side hair flowing down past face — curly chunks
+          ctx.beginPath();
+          ctx.moveTo(hR * 0.82, headY + hR * 0.05);
+          ctx.quadraticCurveTo(hR * 1.0, headY + hR * 0.3, hR * 0.88, headY + hR * 0.6);
+          ctx.quadraticCurveTo(hR * 0.75, headY + hR * 0.8, hR * 0.6, headY + hR * 0.95);
+          ctx.quadraticCurveTo(hR * 0.45, headY + hR * 0.8, hR * 0.55, headY + hR * 0.5);
+          ctx.quadraticCurveTo(hR * 0.65, headY + hR * 0.25, hR * 0.82, headY + hR * 0.05);
+          ctx.closePath();
+          ctx.fill(); ctx.stroke();
+          // Extra curl bumps on left
+          ctx.beginPath();
+          ctx.arc(-hR * 0.78, headY + hR * 0.45, hR * 0.14, 0, Math.PI * 2);
+          ctx.fill(); ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(-hR * 0.62, headY + hR * 0.82, hR * 0.12, 0, Math.PI * 2);
+          ctx.fill(); ctx.stroke();
+          // Extra curl bumps on right
+          ctx.beginPath();
+          ctx.arc(hR * 0.8, headY + hR * 0.4, hR * 0.13, 0, Math.PI * 2);
+          ctx.fill(); ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(hR * 0.65, headY + hR * 0.75, hR * 0.11, 0, Math.PI * 2);
+          ctx.fill(); ctx.stroke();
+        } else {
+          // Man's hair — short neat crop sitting on top of head
+          ctx.fillStyle = hair;
+          ctx.strokeStyle = '#2D2D2D';
+          ctx.lineWidth = cs * 0.12;
+          // Hair sits on the upper half of the head only
+          ctx.beginPath();
+          ctx.moveTo(-hR * 0.78, headY - hR * 0.25);
+          ctx.quadraticCurveTo(-hR * 0.82, headY - hR * 0.55, -hR * 0.5, headY - hR * 0.78);
+          ctx.quadraticCurveTo(-hR * 0.15, headY - hR * 0.95, hR * 0.15, headY - hR * 0.95);
+          ctx.quadraticCurveTo(hR * 0.5, headY - hR * 0.78, hR * 0.82, headY - hR * 0.55);
+          ctx.lineTo(hR * 0.78, headY - hR * 0.25);
+          // Curve back along the head outline (hairline)
+          ctx.quadraticCurveTo(hR * 0.6, headY - hR * 0.35, hR * 0.3, headY - hR * 0.42);
+          ctx.quadraticCurveTo(0, headY - hR * 0.48, -hR * 0.3, headY - hR * 0.42);
+          ctx.quadraticCurveTo(-hR * 0.6, headY - hR * 0.35, -hR * 0.78, headY - hR * 0.25);
+          ctx.closePath();
+          ctx.fill(); ctx.stroke();
+        }
+
+        // FACE
+        // Eyes — white sclera, coloured iris, dark pupil, highlight
+        const eX = hR * 0.28;
+        const eY = headY + hR * 0.06;
+        const eyeW = cs * 0.38;
+        const eyeH = cs * 0.3;
+        const irisCol = p.isW ? '#4A2810' : '#5B8EC4'; // brown for her, blue for him
+
+        // Left eye
+        ctx.fillStyle = '#FFF';
+        ctx.strokeStyle = '#2D2D2D';
+        ctx.lineWidth = cs * 0.1;
+        ctx.beginPath();
+        ctx.ellipse(-eX, eY, eyeW, eyeH, 0, 0, Math.PI * 2);
+        ctx.fill(); ctx.stroke();
+        ctx.fillStyle = irisCol;
+        ctx.beginPath();
+        ctx.arc(-eX + cs * 0.04, eY + cs * 0.02, cs * 0.18, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#1A1A1A';
+        ctx.beginPath();
+        ctx.arc(-eX + cs * 0.04, eY + cs * 0.02, cs * 0.1, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#FFF';
+        ctx.beginPath();
+        ctx.arc(-eX + cs * 0.1, eY - cs * 0.05, cs * 0.06, 0, Math.PI * 2);
+        ctx.fill();
+        // Right eye
+        ctx.fillStyle = '#FFF';
+        ctx.strokeStyle = '#2D2D2D';
+        ctx.lineWidth = cs * 0.1;
+        ctx.beginPath();
+        ctx.ellipse(eX, eY, eyeW, eyeH, 0, 0, Math.PI * 2);
+        ctx.fill(); ctx.stroke();
+        ctx.fillStyle = irisCol;
+        ctx.beginPath();
+        ctx.arc(eX + cs * 0.04, eY + cs * 0.02, cs * 0.18, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#1A1A1A';
+        ctx.beginPath();
+        ctx.arc(eX + cs * 0.04, eY + cs * 0.02, cs * 0.1, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#FFF';
+        ctx.beginPath();
+        ctx.arc(eX + cs * 0.1, eY - cs * 0.05, cs * 0.06, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Eyebrows
+        ctx.strokeStyle = p.isW ? '#2C1810' : '#6B5540';
+        ctx.lineWidth = cs * 0.12;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(-eX - eyeW * 0.6, eY - eyeH * 1.6);
+        ctx.quadraticCurveTo(-eX, eY - eyeH * 2.1, -eX + eyeW * 0.6, eY - eyeH * 1.5);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(eX - eyeW * 0.6, eY - eyeH * 1.5);
+        ctx.quadraticCurveTo(eX, eY - eyeH * 2.1, eX + eyeW * 0.6, eY - eyeH * 1.6);
+        ctx.stroke();
+
+        // Nose — subtle small curve
+        ctx.strokeStyle = p.isW ? 'rgba(140,80,40,0.4)' : 'rgba(170,130,80,0.4)';
+        ctx.lineWidth = cs * 0.08;
+        ctx.beginPath();
+        ctx.arc(0, headY + hR * 0.22, cs * 0.12, Math.PI * 0.3, Math.PI * 0.7);
+        ctx.stroke();
+
+        // Smile
+        ctx.strokeStyle = '#2D2D2D';
+        ctx.lineWidth = cs * 0.12;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.arc(0, headY + hR * 0.22, hR * 0.28, 0.25, Math.PI - 0.25);
+        ctx.stroke();
+
+        // Blush
+        ctx.fillStyle = 'rgba(232,150,122,0.4)';
+        ctx.beginPath();
+        ctx.ellipse(-hR * 0.5, headY + hR * 0.3, cs * 0.3, cs * 0.16, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(hR * 0.5, headY + hR * 0.3, cs * 0.3, cs * 0.16, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Necklace for woman
+        if (p.isW) {
+          ctx.strokeStyle = '#C0C0C0';
+          ctx.lineWidth = cs * 0.07;
+          ctx.beginPath();
+          ctx.arc(0, bt - nkH * 0.1, cs * 0.5, 0.3, Math.PI - 0.3);
+          ctx.stroke();
+          ctx.fillStyle = '#C0C0C0';
+          ctx.strokeStyle = '#2D2D2D';
+          ctx.lineWidth = cs * 0.04;
+          ctx.beginPath();
+          ctx.arc(0, bt - nkH * 0.1 + cs * 0.5, cs * 0.08, 0, Math.PI * 2);
+          ctx.fill(); ctx.stroke();
+        }
+
+        // Store inner shoulder position for handholding
+        const innerS = p.isW ? 1 : -1;
+        const shLX = innerS * bW * 0.38;
+        const shLY = -bH * 0.85;
+        shPts.push({
+          x: sX + shLX * cosT - shLY * sinT,
+          y: sY + shLX * sinT + shLY * cosT,
+          skin: skin
+        });
+
+        ctx.restore();
+      }
+
+      // HOLDING HANDS — connecting inner arms
+      if (shPts.length === 2) {
+        const midX = (shPts[0].x + shPts[1].x) * 0.5;
+        const midY = (shPts[0].y + shPts[1].y) * 0.5 + cs * 0.6;
+
+        for (let i = 0; i < 2; i++) {
+          const sp = shPts[i];
+          const dir = i === 0 ? 1 : -1;
+          ctx.strokeStyle = '#2D2D2D';
+          ctx.lineWidth = cs * 0.45;
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(sp.x, sp.y);
+          ctx.quadraticCurveTo(sp.x + dir * cs * 0.8, midY - cs * 0.2, midX, midY);
+          ctx.stroke();
+          ctx.strokeStyle = sp.skin;
+          ctx.lineWidth = cs * 0.3;
+          ctx.beginPath();
+          ctx.moveTo(sp.x, sp.y);
+          ctx.quadraticCurveTo(sp.x + dir * cs * 0.8, midY - cs * 0.2, midX, midY);
+          ctx.stroke();
+        }
+        // Clasped hands
+        ctx.fillStyle = '#D4956B';
+        ctx.strokeStyle = '#2D2D2D';
+        ctx.lineWidth = cs * 0.1;
+        ctx.beginPath();
+        ctx.arc(midX, midY, cs * 0.32, 0, Math.PI * 2);
+        ctx.fill(); ctx.stroke();
+      }
+    }
+
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+  draw();
+})();
+</script>
+</body>
+</html>
